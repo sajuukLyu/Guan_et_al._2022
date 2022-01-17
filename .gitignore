@@ -1,6 +1,7 @@
 
 # big data
-data/hADSCs_0618_scRNA/*
+data/*
+middata/*
 
 # History files
 .Rhistory
