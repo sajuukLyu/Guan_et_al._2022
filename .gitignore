@@ -1,3 +1,7 @@
+
+# big data
+data/hADSCs_0618_scRNA/*
+
 # History files
 .Rhistory
 .Rapp.history
@@ -7,6 +11,7 @@
 
 # User-specific files
 .Ruserdata
+*.Rproj
 
 # Example code in package build process
 *-Ex.R
