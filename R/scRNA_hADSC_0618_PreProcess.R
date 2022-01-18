@@ -42,7 +42,7 @@ saveRDS(allSo, "middata/hADSCs_0618_scRNA/allSo_raw.rds")
 # quality control ---------------------------------------------------------
 
 allSo <- readRDS("middata/hADSCs_0618_scRNA/allSo_raw.rds")
-allSo$sample <- factor(str_extract(colnames(allSo), ".*_") %>% str_remove("_$"), levels = usedSample)
+allSo$sample <- str_extract(colnames(allSo), ".*_") %>% str_remove("_$")
 table(allSo$sample)
 
 mtGene <- rownames(allSo) %>% str_subset("^MT-")
