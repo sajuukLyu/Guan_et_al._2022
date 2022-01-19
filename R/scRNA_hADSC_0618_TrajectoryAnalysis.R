@@ -18,7 +18,7 @@ library(Seurat)
 
 # WOT ---------------------------------------------------------------------
 
-allSo <- readRDS("middata/hADSCs_0618_scRNA/allSo_qc.rds")
+allSo <- readRDS("middata/hADSC_0618_scRNA/allSo_qc.rds")
 
 # prepare input
 
@@ -45,13 +45,13 @@ wotExp <- allSo[["RNA"]]@data[VariableFeatures(allSo), ] %>% as.matrix %>% t
 wotExp <- cbind(rownames(wotExp), wotExp)
 colnames(wotExp)[1] <- "id"
 
-write.table(wotExp, "middata/hADSCs_0618_scRNA/wot/wotExp.txt", sep = "\t", row.names = F, quote = F)
+write.table(wotExp, "middata/hADSC_0618_scRNA/wot/wotExp.txt", sep = "\t", row.names = F, quote = F)
 
 wotDay <- as.matrix(allSo$time)
 rownames(wotDay) <- colnames(allSo)
 wotDay <- cbind(rownames(wotDay), wotDay)
 colnames(wotDay) <- c("id", "day")
-write.table(wotDay, "middata/hADSCs_0618_scRNA/wot/wotDay.txt", sep = "\t", quote = F, row.names = F)
+write.table(wotDay, "middata/hADSC_0618_scRNA/wot/wotDay.txt", sep = "\t", quote = F, row.names = F)
 
 # perform WOT analysis according to developer instructions (https://broadinstitute.github.io/wot/)
 
@@ -76,14 +76,14 @@ end$celltype[end$seurat_clusters %in% c()] <- "Stromal"
 
 # the celltypes were used to calculate right and wrong probability
 
-allSo$CiPS <- readRDS("middata/hADSCs_0618_scRNA/CiPS_score.rds")[colnames(allSo)]
-allSo$Stromal <- readRDS("middata/hADSCs_0618_scRNA/Stromal_score.rds")[colnames(allSo)]
+allSo$CiPS <- readRDS("middata/hADSC_0618_scRNA/CiPS_score.rds")[colnames(allSo)]
+allSo$Stromal <- readRDS("middata/hADSC_0618_scRNA/Stromal_score.rds")[colnames(allSo)]
 
-saveRDS(allSo, "middata/hADSCs_0618_scRNA/allSo_traj.rds")
+saveRDS(allSo, "middata/hADSC_0618_scRNA/allSo_traj.rds")
 
 # identify right trajectory -----------------------------------------------
 
-allSo <- readRDS("middata/hADSCs_0618_scRNA/allSo_traj.rds")
+allSo <- readRDS("middata/hADSC_0618_scRNA/allSo_traj.rds")
 
 allSo$traj <- "F"
 allSo$traj[allSo$sample == "prime"] <- "prime"
@@ -208,7 +208,7 @@ s34rrr$traj[s34rrr$seurat_clusters %in% c()] <- "R_13"
 
 allSo@meta.data[colnames(s34rrr), "traj"] <- s34rrr$traj
 
-saveRDS(allSo, "middata/hADSCs_0618_scRNA/allSo_traj.rds")
+saveRDS(allSo, "middata/hADSC_0618_scRNA/allSo_traj.rds")
 
 # integrate H1 ------------------------------------------------------------
 
@@ -234,7 +234,7 @@ allSo[["umap"]] <- CreateDimReducObject(
   umapData[colnames(allSo), ], assay = "RNA", key = "UMAP_"
 )
 
-saveRDS(allSo, "middata/hADSCs_0618_scRNA/allSo_traj.rds")
+saveRDS(allSo, "middata/hADSC_0618_scRNA/allSo_traj.rds")
 
 # PAGA --------------------------------------------------------------------
 
@@ -260,11 +260,11 @@ adata <- sc$AnnData(
 adata$obsm$update(X_pca = Embeddings(allSo, "lsi"))
 adata$obsm$update(X_umap = Embeddings(allSo, "umap"))
 
-adata$write_h5ad("middata/hADSCs_0618_scRNA/allAnn.h5ad")
+adata$write_h5ad("middata/hADSC_0618_scRNA/allAnn.h5ad")
 
-# perform PAGA analysis to get FA coordinates of trajectory
+# perform PAGA analysis (https://github.com/theislab/paga) to get FA coordinates of trajectory
 
-adata <- sc$read_h5ad("middata/hADSCs_0618_scRNA/allAnn_paga.h5ad")
+adata <- sc$read_h5ad("middata/hADSC_0618_scRNA/allAnn_paga.h5ad")
 
 fa_emb <- adata$obsm['X_draw_graph_fa']
 colnames(fa_emb) <- c("FA_1", "FA_2")
@@ -274,5 +274,39 @@ allSo[["fa"]] <- CreateDimReducObject(embeddings = fa_emb, key = "FA_", assay = 
 
 DimPlot(allSo, group.by = "sample", reduction = "fa", label = T)
 
-saveRDS(allSo, "middata/hADSCs_0618_scRNA/allSo_traj.rds")
+saveRDS(allSo, "middata/hADSC_0618_scRNA/allSo_traj.rds")
+
+# trajectory for S3 and S4 ------------------------------------------------
+
+s34 <- allSo[, allSo$sample %in% c("S3D4", "S3D8", "S3D12", "S4D1", "S4D2", "S4D4", "S4D10")]
+s34 %<>% FindVariableFeatures
+s34 %<>% ScaleData %>% RunPCA
+s34 %>% ElbowPlot(ndims = 50)
+s34 %<>% FindNeighbors(dims = 1:20)
+s34 %<>% FindClusters(resolution = 1)
+s34 %<>% RunUMAP(dims = 1:20)
+
+DimPlot(s34, group.by = "sample", label = T)
+
+usedData <- allSo[["RNA"]]@data[VariableFeatures(allSo), ] %>% as.matrix
+
+library(phateR)
+
+dataPhate <- phate(usedData, ndim = 2, knn = 10, npca = 100)
+s34[["phate"]] <- CreateDimReducObject(
+  embeddings = dataPhate$embedding * 100,
+  assay = "RNA",
+  key = "PHATE_"
+)
+
+DimPlot(s34, group.by = "sample", reduction = "phate", dims = c(1, 3), label = T)
+
+s34rt <- s34[, s34$traj %in% c("R_10", "R_11", "R_12", "R_13")]
+
+# perform PAGA analysis to get pseudotime of s34rt
+
+s34$ptime <- NA
+s34@meta.data[colnames(s34rt), "ptime"] <- s34rt$ptime
+
+saveRDS(s34, "middata/hADSC_0618_scRNA/s34_traj.rds")
 

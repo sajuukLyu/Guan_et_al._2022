@@ -21,14 +21,9 @@ library(scran)
 # load data ---------------------------------------------------------------
 
 usedSample <- c(
-  "ADSC", "S1D0", "S1D0.5", "S1D1", "S1D2", "S1D4", "S1D8",
-  "S2D4", "S2D8", "S2D12", "S2D20",
-  "S3D4", "S3D8", "S3D12",
-  "S4D1", "S4D2", "S4D4", "S4D10",
-  "prime",
-  "H1")
+  "ASF", "S1D16", "S2D24", "prime_ASF")
 
-dataList <- map(str_c("data/hADSC_0618_scRNA/", usedSample), Read10X)
+dataList <- map(str_c("data/hASF_scRNA/", usedSample), Read10X)
 
 names(dataList) <- usedSample
 dataList <- imap(dataList, ~ {set_colnames(.x, str_c(.y, "_", colnames(.x)))})
@@ -37,11 +32,11 @@ map_int(dataList, ncol)
 countData <- do.call(cbind, dataList)
 allSo <- CreateSeuratObject(countData)
 
-saveRDS(allSo, "middata/hADSC_0618_scRNA/allSo_raw.rds")
+saveRDS(allSo, "middata/hASF_scRNA/allSo_raw.rds")
 
 # quality control ---------------------------------------------------------
 
-allSo <- readRDS("middata/hADSC_0618_scRNA/allSo_raw.rds")
+allSo <- readRDS("middata/hASF_scRNA/allSo_raw.rds")
 allSo$sample <- str_extract(colnames(allSo), ".*_") %>% str_remove("_$")
 table(allSo$sample)
 
@@ -76,6 +71,4 @@ VlnPlot(allSo, "dbl", group.by = "seurat_clusters", pt.size = 0)
 badClu <- c() # low quality clusters
 allSo <- allSo[, allSo$seurat_clusters %ni% badClu]
 
-saveRDS(allSo, "middata/hADSC_0618_scRNA/allSo_qc.rds")
-
-
+saveRDS(allSo, "middata/hASF_scRNA/allSo_qc.rds")
