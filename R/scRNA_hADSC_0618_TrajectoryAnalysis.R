@@ -212,7 +212,8 @@ saveRDS(allSo, "middata/hADSC_0618_scRNA/allSo_traj.rds")
 
 # integrate H1 ------------------------------------------------------------
 
-# perform LSI projection (https://github.com/sajuukLyu/projectLSI) to get LSI coordiates lsiData
+# perform LSI projection to get LSI coordinates lsiData
+# refer to https://github.com/GreenleafLab/MPAL-Single-Cell-2019
 
 allSo[["lsi"]] <- CreateDimReducObject(
   lsiData[colnames(allSo), ], assay = "RNA", key = "LSI_"
